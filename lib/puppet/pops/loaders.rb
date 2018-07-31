@@ -13,6 +13,7 @@ class Loaders
 
   attr_reader :static_loader
   attr_reader :puppet_system_loader
+  attr_reader :puppet_cache_loader
   attr_reader :public_environment_loader
   attr_reader :private_environment_loader
   attr_reader :environment
@@ -43,6 +44,9 @@ class Loaders
     #
     @puppet_system_loader = create_puppet_system_loader()
 
+    # Create a loader that is hardcoded to read from the cache
+
+    @puppet_cache_loader = create_puppet_cache_loader()
     # 2. Environment loader - i.e. what is bound across the environment, may change for each setup
     #    TODO: loaders need to work when also running in an agent doing catalog application. There is no
     #    concept of environment the same way as when running as a master (except when doing apply).
@@ -357,6 +361,10 @@ class Loaders
     Loader::ModuleLoaders.system_loader_from(static_loader, self)
   end
 
+  def create_puppet_cache_loader()
+    Loader::ModuleLoaders.cached_loader_from(puppet_system_loader, self)
+  end
+
   def create_environment_loader(environment)
     # This defines where to start parsing/evaluating - the "initial import" (to use 3x terminology)
     # Is either a reference to a single .pp file, or a directory of manifests. If the environment becomes
@@ -378,11 +386,11 @@ class Loaders
     env_path = env_conf.nil? || !env_conf.is_a?(Puppet::Settings::EnvironmentConf) ? nil : env_conf.path_to_env
 
     if Puppet[:tasks]
-      loader = Loader::ModuleLoaders.environment_loader_from(puppet_system_loader, self, env_path)
+      loader = Loader::ModuleLoaders.environment_loader_from(puppet_cache_loader, self, env_path)
     else
       # Create the 3.x resource type loader
       static_loader.runtime_3_init
-      @runtime3_type_loader = add_loader_by_name(Loader::Runtime3TypeLoader.new(puppet_system_loader, self, environment, env_conf.nil? ? nil : env_path))
+      @runtime3_type_loader = add_loader_by_name(Loader::Runtime3TypeLoader.new(puppet_cache_loader, self, environment, env_conf.nil? ? nil : env_path))
 
       if env_path.nil?
         # Not a real directory environment, cannot work as a module TODO: Drop when legacy env are dropped?

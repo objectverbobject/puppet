@@ -19,6 +19,18 @@ module Loader
 # @api private
 #
 module ModuleLoaders
+  def self.cached_loader_from(parent_loader, loaders)
+    # Tony's testing hard coding the cache in, mostly copied from the system_loader_from function.
+    puppet_cached_lib = '/opt/puppetlabs/puppet/cache/lib/'
+    LibRootedFileBased.new(parent_loader,
+      loaders,
+      nil,
+      puppet_cached_lib,
+      'cached_puppet_system',
+      [:func_4x, :datatype]
+    )
+  end
+
   def self.system_loader_from(parent_loader, loaders)
     # Puppet system may be installed in a fixed location via RPM, installed as a Gem, via source etc.
     # The only way to find this across the different ways puppet can be installed is
