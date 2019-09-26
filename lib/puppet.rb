@@ -148,10 +148,20 @@ module Puppet
     Puppet.settings.initialize_global_settings(args, require_config)
     run_mode = Puppet::Util::RunMode[run_mode]
     Puppet.settings.initialize_app_defaults(Puppet::Settings.app_defaults_for_run_mode(run_mode))
+    globalize_the_things
     push_context_global(Puppet.base_context(Puppet.settings), "Initial context after settings initialization")
     Puppet::Parser::Functions.reset
   end
   private_class_method :do_initialize_settings_for_run_mode
+
+  def self.globalize_the_things
+    if Puppet[:storeconfigs]
+      Puppet::Resource::Catalog.indirection.set_global_setting(:cache_class, :store_configs)
+      Puppet.settings.override_default(:catalog_cache_terminus, :store_configs)
+      Puppet::Node::Facts.indirection.set_global_setting(:cache_class, :store_configs)
+      Puppet::Resource.indirection.set_global_setting(:terminus_class, :store_configs)
+    end
+  end
 
   # Initialize puppet's core facts. It should not be called before initialize_settings.
   def self.initialize_facts
